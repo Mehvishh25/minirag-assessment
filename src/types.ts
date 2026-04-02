@@ -23,8 +23,8 @@ export const EmailVectorPayload = z.object({
   subject: z.string(),
   from: z.string(),
   to: z.array(z.string()),
-  timestamp: z.string(),
-  organization: z.string().optional(),
+  timestamp: z.number(),
+  organization: z.string(),
   labels: z.array(z.string()),
   importance: z.enum(["low", "medium", "high"])
 });
