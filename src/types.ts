@@ -19,8 +19,8 @@ export type Email = z.infer<typeof EmailSchema>;
 
 export const EmailVectorPayload = z.object({
   id: z.string(),
+  conversationId: z.string(),
   subject: z.string(),
-  body: z.string(),
   from: z.string(),
   to: z.array(z.string()),
   timestamp: z.string(),
