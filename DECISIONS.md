@@ -1,8 +1,8 @@
 ## Schema Design (Task 1)
 
-I used Zod for runtime validation and strict TypeScript types via z.infer — no manual type duplication.
+I used Zod for runtime validation and strict TypeScript types.
 The Qdrant payload stores only metadata useful for filtering, scoring, and display: id, conversationId, subject, from, to, timestamp, labels, importance, organization, and bodySnippet.
-I store a 200-character bodySnippet instead of the full body — semantic meaning is captured in the vector, but a snippet is needed for LLM context assembly.
+I store a 200-character bodySnippet instead of the full body so that semantic meaning is captured in the vector, but a snippet is needed for LLM context assembly.
 SearchRequest supports flexible filters (dateFrom, dateTo, organization, from, to).
 SearchResponse has optional answer and citations — empty for /search, populated for /query.
 
