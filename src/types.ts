@@ -26,7 +26,8 @@ export const EmailVectorPayload = z.object({
   timestamp: z.number(),
   organization: z.string(),
   labels: z.array(z.string()),
-  importance: z.enum(["low", "medium", "high"])
+  importance: z.enum(["low", "medium", "high"]),
+  bodySnippet: z.string()
 });
 
 export type EmailVectorPayloadType = z.infer<typeof EmailVectorPayload>;
@@ -39,8 +40,8 @@ export const SearchRequest = z.object({
     organization: z.string().optional(),
     from: z.string().optional(),
     to: z.string().optional(),
-    startDate: z.string().optional(),
-    endDate: z.string().optional()
+    dateFrom: z.string().optional(),
+    dateTo: z.string().optional()
   }).optional()
 });
 

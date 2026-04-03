@@ -112,6 +112,7 @@ async function upsertBatch(
       importance: email.importance,
       timestamp: new Date(email.timestamp).getTime(),
       organization: email.from.split("@")[1],
+      bodySnippet: email.body.slice(0, 200),
     },
   }));
 
