@@ -2,9 +2,13 @@
   "name": "minirag-assessment",
   "version": "1.0.0",
   "description": "",
+  "type": "module",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "dev": "npx tsx src/server.ts"
   },
   "repository": {
     "type": "git",
@@ -13,17 +17,16 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/Mehvishh25/minirag-assessment/issues"
-  },
-  "homepage": "https://github.com/Mehvishh25/minirag-assessment#readme",
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "@qdrant/js-client-rest": "^1.17.0",
     "dotenv": "^17.4.0",
+    "express": "^5.2.1",
     "node-fetch": "^3.3.2",
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@types/express": "^5.0.6",
     "@types/node": "^25.5.0",
     "tsx": "^4.21.0",
     "typescript": "^6.0.2"
