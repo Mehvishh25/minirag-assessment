@@ -3,7 +3,7 @@
 A simplified email search engine that ingests emails, embeds them into a vector database, and answers natural language questions using retrieved context and an LLM.
 
 ## Loom Walkthrough Video
-
+- (coming soon)
 ## How to Install and Run
 
 ### 1. Clone the repo
