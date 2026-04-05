@@ -19,13 +19,19 @@ npm install
 ```
 
 Dependencies used:
-- `@google/generative-ai` — Gemini LLM streaming
-- `@qdrant/js-client-rest` — Qdrant vector database client
-- `dotenv` — environment variable management
-- `zod` — request validation and type inference
-- `typescript` — TypeScript compiler
-- `tsx` — run TypeScript directly without compiling
-- `@types/node` — Node.js type definitions
+- express — REST API server for handling routes and requests
+- @google/generative-ai — Gemini LLM streaming
+- @qdrant/js-client-rest — Qdrant vector database client
+- node-fetch — making external HTTP requests (e.g., APIs / embeddings)
+- dotenv — environment variable management
+- zod — request validation and type inference
+
+Dev Dependencies:
+- typescript — TypeScript compiler
+- tsx — run TypeScript directly without compiling
+- @types/node — Node.js type definitions
+- @types/express — Express type definitions
+
 
 ### 3. Set up environment variables
 ```bash
