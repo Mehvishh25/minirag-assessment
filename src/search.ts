@@ -9,6 +9,17 @@ const JINA_MODEL = process.env.JINA_EMBEDDING_MODEL as string;
 
 const COMBINED_SCORE_THRESHOLD = 0.25;
 
+type QdrantCondition = {
+  key: string;
+  match?: { value: string };
+  range?: { gte?: number; lte?: number };
+};
+
+type QdrantFilter = {
+  must?: QdrantCondition[];
+  should?: QdrantCondition[];
+};
+
 async function embedQuery(query: string): Promise<number[]> {
   const response = await fetch(JINA_BASE_URL, {
     method: "POST",
@@ -16,55 +27,97 @@ async function embedQuery(query: string): Promise<number[]> {
       "Content-Type": "application/json",
       Authorization: `Bearer ${JINA_API_KEY}`,
     },
-    body: JSON.stringify({ model: JINA_MODEL, input: [query] }),
+    body: JSON.stringify({
+      model: JINA_MODEL,
+      input: [query],
+    }),
   });
 
   if (!response.ok) {
     throw new Error(`Jina embed failed: ${response.status}`);
   }
 
-  const json = await response.json() as { data: { embedding: number[] }[] };
+  const json = (await response.json()) as {
+    data: { embedding: number[] }[];
+  };
+
   return json.data[0].embedding;
 }
 
-function buildQdrantFilter(filters?: SearchRequestType["filters"]) {
+function buildQdrantFilter(
+  filters?: SearchRequestType["filters"]
+): QdrantFilter | undefined {
   if (!filters) return undefined;
 
-  const must: any[] = [];
+  const must: QdrantCondition[] = [];
+  const should: QdrantCondition[] = [];
 
   if (filters.from) {
-    must.push({ key: "from", match: { value: filters.from } });
+    must.push({
+      key: "from",
+      match: { value: filters.from },
+    });
   }
 
   if (filters.organization) {
-    must.push({ key: "organization", match: { value: filters.organization } });
+    should.push(
+      { key: "from", match: { value: filters.organization } },
+      { key: "to", match: { value: filters.organization } },
+      { key: "labels", match: { value: filters.organization } }
+    );
   }
 
   if (filters.dateFrom || filters.dateTo) {
-    const range: Record<string, number> = {};
-    if (filters.dateFrom) range.gte = new Date(filters.dateFrom).getTime();
-    if (filters.dateTo) range.lte = new Date(filters.dateTo).getTime();
-    must.push({ key: "timestamp", range });
+    const range: { gte?: number; lte?: number } = {};
+
+    if (filters.dateFrom) {
+      range.gte = new Date(filters.dateFrom).getTime();
+    }
+
+    if (filters.dateTo) {
+      range.lte = new Date(filters.dateTo).getTime();
+    }
+
+    must.push({
+      key: "timestamp",
+      range,
+    });
   }
 
-  return must.length > 0 ? { must } : undefined;
+  const filter: QdrantFilter = {};
+
+  if (must.length > 0) {
+    filter.must = must;
+  }
+
+  if (should.length > 0) {
+    filter.should = should;
+  }
+
+  return Object.keys(filter).length > 0 ? filter : undefined;
 }
 
-function deduplicateByConversation(emails: ScoredEmail[]): ScoredEmail[] {
+function deduplicateByConversation(
+  emails: ScoredEmail[]
+): ScoredEmail[] {
   const best = new Map<string, ScoredEmail>();
 
   for (const email of emails) {
     const existing = best.get(email.conversationId);
+
     if (!existing || email.combinedScore > existing.combinedScore) {
       best.set(email.conversationId, email);
     }
   }
 
-  return Array.from(best.values())
-    .sort((a, b) => b.combinedScore - a.combinedScore);
+  return Array.from(best.values()).sort(
+    (a, b) => b.combinedScore - a.combinedScore
+  );
 }
 
-export async function search(request: SearchRequestType): Promise<ScoredEmail[]> {
+export async function search(
+  request: SearchRequestType
+): Promise<ScoredEmail[]> {
   const topK = request.topK ?? 10;
 
   const queryVector = await embedQuery(request.query);
@@ -83,17 +136,28 @@ export async function search(request: SearchRequestType): Promise<ScoredEmail[]>
   const timestamps = qdrantResults.map(
     r => (r.payload as EmailVectorPayloadType).timestamp
   );
+
   const oldest = Math.min(...timestamps);
   const newest = Math.max(...timestamps);
 
-  const queryTerms = request.query.toLowerCase().split(/\W+/).filter(Boolean);
+  const queryTerms = request.query
+    .toLowerCase()
+    .split(/\W+/)
+    .filter(Boolean);
 
   const scored: ScoredEmail[] = qdrantResults.map(result => {
     const payload = result.payload as EmailVectorPayloadType;
     const vectorScore = result.score;
 
-    const signals = computeSignalScore(queryTerms, payload, oldest, newest);
-    const { signalScore, combinedScore } = computeCombinedScore(vectorScore, signals);
+    const signals = computeSignalScore(
+      queryTerms,
+      payload,
+      oldest,
+      newest
+    );
+
+    const { signalScore, combinedScore } =
+      computeCombinedScore(vectorScore, signals);
 
     return {
       id: payload.id,
@@ -111,7 +175,9 @@ export async function search(request: SearchRequestType): Promise<ScoredEmail[]>
     };
   });
 
-  const filtered = scored.filter(e => e.combinedScore >= COMBINED_SCORE_THRESHOLD);
+  const filtered = scored.filter(
+    e => e.combinedScore >= COMBINED_SCORE_THRESHOLD
+  );
 
   return deduplicateByConversation(filtered);
 }

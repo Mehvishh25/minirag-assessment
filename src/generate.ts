@@ -4,15 +4,12 @@ import { ScoredEmail } from "./scoring.js";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY as string);
 
-const SYSTEM_PROMPT = `You are an email search assistant.
-You answer questions based ONLY on the email context provided to you.
-
-Rules you must follow:
-1. Only use information present in the provided emails
-2. Cite the email ID (e.g. [email-001]) after every claim you make
-3. If the context does not contain enough information, say exactly: "I don't have enough information to answer this."
-4. Never fabricate names, dates, numbers, or decisions not present in the emails
-5. If the question is chitchat (hello, thanks, how are you), respond politely without using email context`;
+const SYSTEM_PROMPT = `You are an email search assistant. You have been given a set of relevant emails as context.
+Answer the user's question using the information in these emails.
+After every claim, cite the email ID in brackets like [email-001].
+If the emails do not contain enough information to answer, say "I don't have enough information to answer this."
+Never make up information that is not present in the emails.
+For greetings or chitchat, respond politely without using the emails.`
 
 const MAX_CONTEXT_EMAILS = 5;
 
@@ -33,6 +30,7 @@ function isChitchat(query: string): boolean {
 }
 
 function buildContext(results: ScoredEmail[]): string {
+  
   const topResults = results.slice(0, MAX_CONTEXT_EMAILS);
 
   return topResults.map(email => {
@@ -49,8 +47,8 @@ function buildContext(results: ScoredEmail[]): string {
 }
 
 export function extractCitations(text: string): string[] {
-  const matches = text.match(/\[email-\d+\]/g) ?? [];
-  return [...new Set(matches)].map(m => m.replace(/[\[\]]/g, ""));
+  const matches = text.match(/email-\d+/g) ?? [];
+  return [...new Set(matches)];
 }
 
 export async function* generateAnswer(
