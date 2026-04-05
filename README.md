@@ -4,6 +4,7 @@ A simplified email search engine that ingests emails, embeds them into a vector 
 
 ## Loom Walkthrough Video
 - (coming soon)
+
 ## How to Install and Run
 
 ### 1. Clone the repo
@@ -12,15 +13,15 @@ git clone https://github.com/Mehvishh25/minirag-assessment.git
 cd minirag-assessment
 ```
 
-## Install Dependencies
+### 2. Install dependencies
 ```bash
 npm install
 ```
 
+Dependencies used:
 - `@google/generative-ai` — Gemini LLM streaming
 - `@qdrant/js-client-rest` — Qdrant vector database client
 - `dotenv` — environment variable management
-- `node-fetch` — HTTP requests for Jina embeddings API
 - `zod` — request validation and type inference
 - `typescript` — TypeScript compiler
 - `tsx` — run TypeScript directly without compiling
@@ -30,16 +31,45 @@ npm install
 ```bash
 cp .env.example .env
 ```
-Fill in API keys in `.env`.
+Fill in your API keys in `.env`.
 
-## Start Qdrant
+### 4. Start Qdrant
 ```bash
 docker run -p 6333:6333 -p 6334:6334 qdrant/qdrant
 ```
 
-## Run Ingestion
+### 5. Run ingestion
 ```bash
 npx tsx scripts/seed.ts
+```
+
+### 6. Start the server
+```bash
+npx tsx src/server.ts
+```
+
+## API Endpoints
+
+### POST /ingest
+Triggers the ingestion pipeline and returns an IngestResult.
+```bash
+curl -X POST http://localhost:3000/ingest
+```
+
+### POST /search
+Accepts a SearchRequest body and returns scored results without an LLM answer.
+```bash
+curl -X POST http://localhost:3000/search \
+  -H "Content-Type: application/json" \
+  -d '{"query": "Cloud9 sponsorship", "topK": 5}'
+```
+
+### POST /query
+Accepts a query and filters, runs search and LLM generation, streams the response.
+```bash
+curl -X POST http://localhost:3000/query \
+  -H "Content-Type: application/json" \
+  -d '{"query": "What is the status of the Cloud9 sponsorship deal?"}'
 ```
 
 ## Architecture
@@ -57,3 +87,21 @@ Build Context + Call Gemini LLM
 ↓
 Stream Answer with Citations
 
+## Project Structure
+minirag-assessment/
+src/
+ingest.ts       — email ingestion and embedding pipeline
+search.ts       — vector search and hybrid logic
+generate.ts     — LLM answer generation
+scoring.ts      — relevance scoring algorithm
+server.ts       — HTTP API endpoints
+types.ts        — Zod schemas and TypeScript types
+qdrant.ts       — Qdrant client setup and collection management
+scripts/
+seed.ts         — script to run ingestion
+reset.ts        — script to delete and recreate collection
+data/
+emails.json     — synthetic email dataset
+.env.example      — required environment variables
+DECISIONS.md      — design decisions and trade-offs
+README.md         — setup instructions and architecture
