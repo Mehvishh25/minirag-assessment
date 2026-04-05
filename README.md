@@ -74,34 +74,15 @@ curl -X POST http://localhost:3000/query \
 
 ## Architecture
 User Query
-↓
+->
 Embed Query (Jina Embeddings)
-↓
+->
 Vector Search (Qdrant - cosine similarity)
-↓
+->
 Signal Scoring (subject + participant + label + recency)
-↓
+->
 Filter & Deduplicate Results
-↓
+->
 Build Context + Call Gemini LLM
-↓
+->
 Stream Answer with Citations
-
-## Project Structure
-minirag-assessment/
-src/
-ingest.ts       — email ingestion and embedding pipeline
-search.ts       — vector search and hybrid logic
-generate.ts     — LLM answer generation
-scoring.ts      — relevance scoring algorithm
-server.ts       — HTTP API endpoints
-types.ts        — Zod schemas and TypeScript types
-qdrant.ts       — Qdrant client setup and collection management
-scripts/
-seed.ts         — script to run ingestion
-reset.ts        — script to delete and recreate collection
-data/
-emails.json     — synthetic email dataset
-.env.example      — required environment variables
-DECISIONS.md      — design decisions and trade-offs
-README.md         — setup instructions and architecture
