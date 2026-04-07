@@ -3,7 +3,7 @@ import crypto from "crypto";
 import fs from "fs";
 import path from "path";
 import { qdrant, COLLECTION_NAME, createCollection } from "./qdrant.js";
-import { EmailSchema, IngestResultType } from "./types.js";
+import { EmailSchema, EmailVectorPayload, IngestResultType } from "./types.js";
 
 const BATCH_SIZE = 5;
 const VECTOR_SIZE = 1024;
@@ -51,6 +51,26 @@ function buildEmbedText(email: typeof emails[number]): string {
   ].join("\n");
 }
 
+function extractDomain(email: string): string {
+  return email.split("@")[1] ?? "";
+}
+
+function extractOrganizations(email: typeof emails[number]): string[] {
+  const domains = new Set<string>();
+
+  domains.add(extractDomain(email.from));
+
+  for (const addr of email.to) {
+    domains.add(extractDomain(addr));
+  }
+
+  for (const label of email.labels) {
+    domains.add(label);
+  }
+
+  return [...domains].filter(Boolean);
+}
+
 function sleep(ms: number) {
   return new Promise(res => setTimeout(res, ms));
 }
@@ -84,10 +104,8 @@ async function fetchEmbeddingsWithRetry(texts: string[]): Promise<number[][]> {
 }
 
 async function upsertBatch(batch: typeof emails, embeddings: number[][]) {
-  const points = batch.map((email, idx) => ({
-    id: toDeterministicUUID(email.id),
-    vector: embeddings[idx],
-    payload: {
+  const points = batch.map((email, idx) => {
+    const rawPayload = {
       id: email.id,
       conversationId: email.conversationId,
       subject: email.subject,
@@ -96,10 +114,19 @@ async function upsertBatch(batch: typeof emails, embeddings: number[][]) {
       labels: email.labels,
       importance: email.importance,
       timestamp: new Date(email.timestamp).getTime(),
-      organization: email.from.split("@")[1],
+      organizations: extractOrganizations(email),
       bodySnippet: email.body.slice(0, 200),
-    },
-  }));
+    };
+
+    const validatedPayload = EmailVectorPayload.parse(rawPayload);
+
+    return {
+      id: toDeterministicUUID(email.id),
+      vector: embeddings[idx],
+      payload: validatedPayload,
+    };
+  });
+
   await qdrant.upsert(COLLECTION_NAME, { points });
 }
 
@@ -147,4 +174,3 @@ export async function ingestEmails(): Promise<IngestResultType> {
 
   return result;
 }
-
