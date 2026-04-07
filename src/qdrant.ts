@@ -32,7 +32,7 @@ export async function createCollection(vectorSize: number): Promise<void> {
       field_schema: "integer",
     });
     await qdrant.createPayloadIndex(COLLECTION_NAME, {
-      field_name: "organization",
+      field_name: "organizations",
       field_schema: "keyword",
     });
     console.log("Qdrant collection created:", COLLECTION_NAME);
