@@ -9,15 +9,22 @@ const JINA_MODEL = process.env.JINA_EMBEDDING_MODEL as string;
 
 const COMBINED_SCORE_THRESHOLD = 0.25;
 
-type QdrantCondition = {
+type QdrantMatchCondition = {
   key: string;
-  match?: { value: string };
-  range?: { gte?: number; lte?: number };
+  match: { value: string };
 };
+
+type QdrantRangeCondition = {
+  key: string;
+  range: { gte?: number; lte?: number };
+};
+
+type QdrantCondition = QdrantMatchCondition | QdrantRangeCondition;
 
 type QdrantFilter = {
   must?: QdrantCondition[];
   should?: QdrantCondition[];
+  must_not?: QdrantCondition[];
 };
 
 async function embedQuery(query: string): Promise<number[]> {
@@ -51,6 +58,7 @@ function buildQdrantFilter(
 
   const must: QdrantCondition[] = [];
   const should: QdrantCondition[] = [];
+  const must_not: QdrantCondition[] = [];
 
   if (filters.from) {
     must.push({
@@ -61,8 +69,7 @@ function buildQdrantFilter(
 
   if (filters.organization) {
     should.push(
-      { key: "from", match: { value: filters.organization } },
-      { key: "to", match: { value: filters.organization } },
+      { key: "organizations", match: { value: filters.organization } },
       { key: "labels", match: { value: filters.organization } }
     );
   }
@@ -84,27 +91,26 @@ function buildQdrantFilter(
     });
   }
 
+  if (filters.excludeLabels && filters.excludeLabels.length > 0) {
+    for (const label of filters.excludeLabels) {
+      must_not.push({ key: "labels", match: { value: label } });
+    }
+  }
+
   const filter: QdrantFilter = {};
 
-  if (must.length > 0) {
-    filter.must = must;
-  }
-
-  if (should.length > 0) {
-    filter.should = should;
-  }
+  if (must.length > 0) filter.must = must;
+  if (should.length > 0) filter.should = should;
+  if (must_not.length > 0) filter.must_not = must_not;
 
   return Object.keys(filter).length > 0 ? filter : undefined;
 }
 
-function deduplicateByConversation(
-  emails: ScoredEmail[]
-): ScoredEmail[] {
+function deduplicateByConversation(emails: ScoredEmail[]): ScoredEmail[] {
   const best = new Map<string, ScoredEmail>();
 
   for (const email of emails) {
     const existing = best.get(email.conversationId);
-
     if (!existing || email.combinedScore > existing.combinedScore) {
       best.set(email.conversationId, email);
     }
@@ -115,9 +121,7 @@ function deduplicateByConversation(
   );
 }
 
-export async function search(
-  request: SearchRequestType
-): Promise<ScoredEmail[]> {
+export async function search(request: SearchRequestType): Promise<ScoredEmail[]> {
   const topK = request.topK ?? 10;
 
   const queryVector = await embedQuery(request.query);
@@ -149,15 +153,8 @@ export async function search(
     const payload = result.payload as EmailVectorPayloadType;
     const vectorScore = result.score;
 
-    const signals = computeSignalScore(
-      queryTerms,
-      payload,
-      oldest,
-      newest
-    );
-
-    const { signalScore, combinedScore } =
-      computeCombinedScore(vectorScore, signals);
+    const signals = computeSignalScore(queryTerms, payload, oldest, newest);
+    const { signalScore, combinedScore } = computeCombinedScore(vectorScore, signals);
 
     return {
       id: payload.id,
@@ -175,9 +172,7 @@ export async function search(
     };
   });
 
-  const filtered = scored.filter(
-    e => e.combinedScore >= COMBINED_SCORE_THRESHOLD
-  );
+  const filtered = scored.filter(e => e.combinedScore >= COMBINED_SCORE_THRESHOLD);
 
   return deduplicateByConversation(filtered);
 }
