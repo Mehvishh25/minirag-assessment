@@ -23,10 +23,15 @@ function isChitchat(query: string): boolean {
     "hello", "hi", "hey", "thanks",
     "thank you", "bye", "how are you"
   ];
-  const lower = query.toLowerCase().trim();
-  return chitchatPatterns.some(p =>
-    new RegExp(`\\b${p}\\b`, "i").test(lower)
-  );
+
+  const lower = query.toLowerCase();
+
+  const cleaned = chitchatPatterns.reduce(
+    (q, word) => q.replace(new RegExp(`\\b${word}\\b`, "gi"), ""),
+    lower
+  ).trim();
+
+  return cleaned.length === 0;
 }
 
 function buildContext(results: ScoredEmail[]): string {
