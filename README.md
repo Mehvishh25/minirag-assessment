@@ -48,6 +48,7 @@ npx tsx scripts/seed.ts
 ### 6. Start the server
 ```bash
 npm run dev
+npx tsx src/server.ts
 ```
 
 ## API Endpoints
