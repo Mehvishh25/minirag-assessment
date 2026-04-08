@@ -1,6 +1,6 @@
 ## 1. What text do you embed for each email, and why?
 
-I embed subject, sender, recipients, and body together. Subject captures the topic, body has the full context, and participants let queries like "emails from sarah" or "emails to cloud9" work. Embedding all four means the vector represents the complete email rather than just its content.
+I embed subject, sender, recipients, and body together. Subject captures the topic, body has the full context, and participants provide important context. Embedding all four means the vector represents the complete email rather than just its content.
 
 ## 2. What metadata fields do you store in the Qdrant payload, and why?
 
