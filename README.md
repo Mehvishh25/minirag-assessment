@@ -47,7 +47,7 @@ npx tsx scripts/seed.ts
 
 ### 6. Start the server
 ```bash
-npm run dev
+npm run dev (or)
 npx tsx src/server.ts
 ```
 
